@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+
+    agent {
+        docker {
+            image 'python:3.12'
+        }
+    }
 
     stages {
 
@@ -9,10 +14,11 @@ pipeline {
             }
         }
 
-        stage('CI Test') {
+        stage('Python Version') {
             steps {
-                sh 'echo "Jenkins CI is working!"'
+                sh 'python --version'
             }
         }
+
     }
 }
