@@ -4,6 +4,7 @@ pipeline {
     environment {
         CI_NETWORK = 'jenkins-ci-network'
         MYSQL_CONTAINER = 'mysql-test'
+
         DATABASE_URL = 'mysql+pymysql://root:testpassword@mysql-test:3306/test_db'
         SECRET_KEY = 'ci-test-secret'
         ALGORITHM = 'HS256'
@@ -42,12 +43,14 @@ pipeline {
                     echo "Waiting for MySQL..."
 
                     for i in $(seq 1 30); do
+
                         if docker exec $MYSQL_CONTAINER \
                            mysqladmin ping \
                            -h localhost \
                            -uroot \
                            -ptestpassword \
                            --silent; then
+
                             echo "MySQL is ready!"
                             exit 0
                         fi
@@ -61,23 +64,22 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    pip install pytest
-                '''
-            }
-        }
-
         stage('Run Tests') {
             steps {
                 sh '''
-                    . venv/bin/activate
-                    pytest -v
+                    docker run --rm \
+                      --network $CI_NETWORK \
+                      -v "$WORKSPACE:/app" \
+                      -w /app \
+                      -e DATABASE_URL="$DATABASE_URL" \
+                      -e SECRET_KEY="$SECRET_KEY" \
+                      -e ALGORITHM="$ALGORITHM" \
+                      -e ACCESS_TOKEN_EXPIRE_MINUTES="$ACCESS_TOKEN_EXPIRE_MINUTES" \
+                      python:3.14-slim \
+                      sh -c "
+                        pip install --no-cache-dir -r requirements.txt &&
+                        pytest -v
+                      "
                 '''
             }
         }
