@@ -83,6 +83,16 @@ pipeline {
                 '''
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build \
+                    -t project-management-api:1.0 \
+                    .
+                '''
+            }
+        }
     }
 
     post {
